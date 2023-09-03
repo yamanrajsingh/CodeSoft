@@ -1,0 +1,110 @@
+import json
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+from tkinter import font as tkfont
+
+class ToDoApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("To-Do List App")
+
+        self.tasks = self.load_tasks()
+        self.updated_description = None  # Store the updated description temporarily
+
+        content_frame = tk.Frame(root)
+        content_frame.pack(expand=True, pady=20)
+
+        # Load the background image using PhotoImage
+
+
+        self.task_listbox = tk.Listbox(content_frame, selectmode=tk.SINGLE, height=10, width=40)
+        self.task_listbox.pack(pady=10)
+
+        self.refresh_tasks()
+
+        self.button_frame = tk.Frame(content_frame)
+        self.button_frame.pack()
+
+        button_width = 10
+        button_height = 2
+        button_font = tkfont.Font(size=10)
+
+        self.add_button = tk.Button(self.button_frame, text="Add Task", command=self.add_task, bg="green", fg="white", width=button_width, height=button_height, font=button_font)
+        self.add_button.pack(side="left", padx=5)
+
+        self.done_button = tk.Button(self.button_frame, text="Mark as Done", command=self.mark_done, bg="blue", fg="white", width=button_width, height=button_height, font=button_font)
+        self.done_button.pack(side="left", padx=5)
+
+        self.update_button = tk.Button(self.button_frame, text="Update Task", command=self.prompt_update_task, bg="orange", fg="white", width=button_width, height=button_height, font=button_font)
+        self.update_button.pack(side="left", padx=5)
+
+        self.delete_button = tk.Button(self.button_frame, text="Delete Task", command=self.delete_task, bg="red", fg="white", width=button_width, height=button_height, font=button_font)
+        self.delete_button.pack(side="left", padx=5)
+
+        self.exit_button = tk.Button(content_frame, text="Exit", command=root.destroy, width=button_width, height=button_height, font=button_font)
+        self.exit_button.pack(pady=10)
+
+    def load_tasks(self):
+        try:
+            with open("tasks.json", "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return []
+
+    def save_tasks(self):
+        with open("tasks.json", "w") as file:
+            json.dump(self.tasks, file)
+
+    def refresh_tasks(self):
+        self.task_listbox.delete(0, tk.END)
+        for task in self.tasks:
+            status = "✓" if task["done"] else " "
+            self.task_listbox.insert(tk.END, f"[{status}] {task['description']}")
+
+    def add_task(self):
+        task_description = simpledialog.askstring("Add Task", "Enter task description:")
+        if task_description:
+            self.tasks.append({"description": task_description, "done": False})
+            self.save_tasks()
+            self.refresh_tasks()
+
+    def mark_done(self):
+        selected_index = self.task_listbox.curselection()
+        if selected_index:
+            task_index = selected_index[0]
+            self.tasks[task_index]["done"] = True
+            self.save_tasks()
+            self.refresh_tasks()
+
+    def prompt_update_task(self):
+        selected_index = self.task_listbox.curselection()
+        if selected_index:
+            task_index = selected_index[0]
+            current_description = self.tasks[task_index]["description"]
+            updated_description = simpledialog.askstring("Update Task", "Enter new task description:", initialvalue=current_description)
+            if updated_description:
+                self.updated_description = updated_description
+                self.refresh_tasks()
+
+    def delete_task(self):
+        selected_index = self.task_listbox.curselection()
+        if selected_index:
+            task_index = selected_index[0]
+            del self.tasks[task_index]
+            self.save_tasks()
+            self.refresh_tasks()
+
+    def update_task_list(self):
+        if self.updated_description is not None:
+            selected_index = self.task_listbox.curselection()
+            if selected_index:
+                task_index = selected_index[0]
+                self.tasks[task_index]["description"] = self.updated_description
+                self.save_tasks()
+                self.refresh_tasks()
+                self.updated_description = None
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ToDoApp(root)
+    root.mainloop()
